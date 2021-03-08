@@ -64,6 +64,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 ##########################################################################
 
 PROJECT(MySQL_CONCPP)
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
 
 # Load cmake modules
 
@@ -389,8 +391,22 @@ add_subdirectory(devapi)
 
 # Generate the main connector library.
 
+find_package(OpenSSL REQUIRED)
+
 merge_libraries(connector xapi devapi)
-target_include_directories(connector PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(connector PUBLIC
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+
+if(BUILD_STATIC)
+  target_compile_definitions(connector PUBLIC STATIC_CONCPP)
+endif()
+target_link_libraries(connector PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+IF(WIN32)
+  target_link_libraries(connector PUBLIC dnsapi)
+ELSEIF(NOT FREEBSD)
+  target_link_libraries(connector PUBLIC resolv)
+ENDIF()
 
 
 #
@@ -466,35 +482,32 @@ set_target_properties(connector PROPERTIES
 )
 
 
-install(TARGETS connector
-  CONFIGURATIONS Release RelWithDebInfo
+install(TARGETS connector EXPORT mysql-connector-cpp
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR_STATIC}" COMPONENT XDevAPIDev
   RUNTIME DESTINATION "${INSTALL_LIB_DIR}" COMPONENT XDevAPIDll
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT XDevAPIDll
 )
 
-install(TARGETS connector
-  CONFIGURATIONS Debug
-  ARCHIVE DESTINATION "${INSTALL_LIB_DIR_STATIC}/debug" COMPONENT XDevAPIDev
-  RUNTIME DESTINATION "${INSTALL_LIB_DIR}/debug" COMPONENT XDevAPIDll
-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}/debug" COMPONENT XDevAPIDll
-)
-
 if(MSVC AND NOT BUILD_STATIC)
 
   install(FILES $<TARGET_PDB_FILE:connector>
-    CONFIGURATIONS RelWithDebInfo
     DESTINATION "${INSTALL_LIB_DIR}"
     COMPONENT Debuginfo
   )
 
-  install(FILES $<TARGET_PDB_FILE:connector>
-    CONFIGURATIONS Debug
-    DESTINATION "${INSTALL_LIB_DIR}/debug"
-    COMPONENT Debuginfo
-  )
-
 endif()
+
+include(CMakePackageConfigHelpers)
+install(EXPORT mysql-connector-cpp
+        NAMESPACE MySQL_CONCPP::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/MySQL_CONCPP
+        FILE        MySQL_CONCPPConfig.cmake)
+write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/MySQL_CONCPPConfigVersion.cmake"
+        VERSION "${ABI_VERSION_MAJOR}.${CONCPP_VERSION}"
+        COMPATIBILITY SameMajorVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/MySQL_CONCPPConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/MySQL_CONCPP)
+
 
 
 #

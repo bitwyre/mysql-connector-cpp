@@ -79,8 +79,8 @@ endif()
 # Extra parameters that are taken form cmake environment or set by libutils.
 #
 
-set(CMAKE_AR @CMAKE_AR@)
-set(CMAKE_RANLIB @CMAKE_RANLIB@)
+set(CMAKE_AR "@CMAKE_AR@")
+set(CMAKE_RANLIB "@CMAKE_RANLIB@")
 set(libext "@CMAKE_STATIC_LIBRARY_SUFFIX@")
 set(CMAKE_CXX_COMPILER "@CMAKE_CXX_COMPILER@")
 set(CMAKE_LINKER "@CMAKE_LINKER@")

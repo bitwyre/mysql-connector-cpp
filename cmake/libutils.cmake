@@ -118,9 +118,6 @@ macro(libutils_setup)
 
   if(NOT MSBUILD AND NOT TARGET save_linker_opts)
     add_executable(save_linker_opts ${LIBUTILS_SCRIPT_DIR}/save_linker_opts.cc)
-    set_property(TARGET save_linker_opts PROPERTY
-      RUNTIME_OUTPUT_DIRECTORY ${LIBUTILS_BIN_DIR}
-    )
   endif()
 
 endmacro(libutils_setup)
@@ -164,7 +161,11 @@ function(merge_libraries TARGET)
   set_property(SOURCE "${LIBUTILS_SCRIPT_DIR}/empty.cc" PROPERTY LANGUAGE CXX)
 
   add_library(${TARGET} ${TYPE} "${LIBUTILS_SCRIPT_DIR}/empty.cc")
-  target_link_libraries(${TARGET} PRIVATE ${ARGN})
+
+  list(TRANSFORM ARGN
+    REPLACE "^(.+)$" "$<BUILD_INTERFACE:\\1>"
+    OUTPUT_VARIABLE build_dependencies)
+  target_link_libraries(${TARGET} PRIVATE ${build_dependencies})
 
   #
   # Arrange for marge_archives.cmake script to be executed in a POST_BUILD
@@ -229,7 +230,7 @@ function(merge_libraries TARGET)
 
     add_dependencies(${TARGET}-deps save_linker_opts)
     set_target_properties(${TARGET}-deps PROPERTIES
-      RULE_LAUNCH_LINK "${LIBUTILS_BIN_DIR}/save_linker_opts ${log_file}.STATIC "
+      RULE_LAUNCH_LINK "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/save_linker_opts ${log_file}.STATIC "
     )
 
     # Arrange for ${TARGET}-deps to be built before ${TARGET}
@@ -247,7 +248,7 @@ function(merge_libraries TARGET)
     #
 
     set_target_properties(${TARGET} PROPERTIES
-      RULE_LAUNCH_LINK "${LIBUTILS_BIN_DIR}/save_linker_opts ${log_file}.SHARED "
+      RULE_LAUNCH_LINK "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/save_linker_opts ${log_file}.SHARED "
     )
 
   else(NOT MSBUILD)
@@ -303,7 +304,7 @@ function(merge_libraries TARGET)
         --target ${TARGET}-deps
         --config $<CONFIG>
         --
-          /nologo /v:q /filelogger /flp:Verbosity=q /flp:ShowCommandLine
+          /t:Rebuild /nologo /v:q /filelogger /flp:Verbosity=q /flp:ShowCommandLine
           /flp:LogFile=\"${log_file}.STATIC\"
 
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

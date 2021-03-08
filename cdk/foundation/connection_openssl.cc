@@ -51,15 +51,6 @@ POP_SYS_WARNINGS_CDK
 
 #ifdef _MSC_VER
   #pragma comment(lib,"ws2_32")
-  #if defined(WITH_SSL)
-    #if OPENSSL_VERSION_NUMBER < 0x10100000L
-      #pragma comment(lib,"ssleay32")
-      #pragma comment(lib,"libeay32")
-    #else
-      #pragma comment(lib,"libssl")
-      #pragma comment(lib,"libcrypto")
-    #endif
-  #endif
 #endif
 
 

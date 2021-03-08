@@ -45,7 +45,7 @@ add_library(cdk STATIC ${cdk_sources} ${HEADERS})
 
 target_link_libraries(cdk
   PUBLIC  cdk_mysqlx cdk_parser
-  PRIVATE Protobuf::pb-lite  # required by codecc.cc
+  PRIVATE protobuf::libprotobuf-lite  # required by codecc.cc
 )
 
 add_coverage(cdk)
